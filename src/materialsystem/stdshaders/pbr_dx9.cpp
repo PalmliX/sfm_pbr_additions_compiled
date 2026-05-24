@@ -19,7 +19,7 @@
 #include "pbr_sg_ps30.inc"
 #include "pbr_sg_projtex_ps30.inc"
 
-#define SFM_BLACKBOX_MODE
+//#define SFM_BLACKBOX_MODE
 
 // M/R and S/G
 const Sampler_t SAMPLER_BASECOLOR		= SHADER_SAMPLER0;

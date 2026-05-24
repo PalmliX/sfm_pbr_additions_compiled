@@ -6,7 +6,7 @@
 
 #include "pbr_common_ps2_3_x.h"
 
-#define SFM_BLACKBOX_MODE 1
+//#define SFM_BLACKBOX_MODE 1
 
 // FIXME: Register Macros dedicated to this Shader. Stop copy pasting Stock Shader Slop 
 const float4 cBaseColor								: register(PSREG_SELFILLUMTINT);
@@ -299,7 +299,7 @@ float4 main(PS_INPUT i) : COLOR
 	// FIXME: Variable Names VIII - Roman Numerals are going to get very hard soon. We call it "diffuseIrradiance" below and then "diffuseIBL"
 	// Oh but THIS? No this is just "Ambient Lighting" because we couldn't find something that sounded worse
 	float3 f3IndirectLighting = 0.0;
-	#if !SFM_BLACKBOX_MODE
+	//#if !SFM_BLACKBOX_MODE
 		#if !FLASHLIGHT
 		{
 			// FIXME: This is terrible, this should be split up drastically. Models and Brushes are two very different Lighting Models
@@ -338,7 +338,7 @@ float4 main(PS_INPUT i) : COLOR
 			// Mostly correct for us
 			f3IndirectLighting = (f3DiffuseLighting + f3IndirectSpecular) * f1AmbientOcclusion;
 		}
-		#endif
+	//	#endif
 	#endif
 	
 	// Start direct
@@ -457,9 +457,9 @@ float4 main(PS_INPUT i) : COLOR
 	// When Lighting is disabled the Ambient Cube is fullbright'ed
 	// Since I disabled all the Indirect Lighting Code we need to account for it differently.
 	// This will essentially do the same Thing:
-	#if (SFM_BLACKBOX_MODE && !FLASHLIGHT)
-		f3CombinedLighting += f3DiffuseColor * f1AmbientOcclusion * g_f1Fullbright;
-	#endif
+	//#if (SFM_BLACKBOX_MODE && !FLASHLIGHT)
+	//	f3CombinedLighting += f3DiffuseColor * f1AmbientOcclusion * g_f1Fullbright;
+	//#endif
 
 	// This is not !FLASHLIGHT. Projected Textures disappear into Fog
 	float f1FogFactor = CalcPixelFogFactor(PIXELFOGTYPE, cFogParams, g_f3CameraPos, f3WorldPos.xyz, f3ProjPos.z);
