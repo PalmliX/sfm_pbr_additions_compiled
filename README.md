@@ -1,4 +1,4 @@
-### This repo purely acts as a means to host a compiled binary of @WhiteRedDragons fork of @ficool2 's SFM PBR Shader, as well my attempt at some documentation based on what I have been able to figure out so far, also perhaps some AI assisted tweaks of my own. 
+### This repo purely acts as a means to host a compiled version of @WhiteRedDragons fork of @ficool2 's SFM PBR Shader, as well my attempt at some documentation based on what I have been able to figure out so far, also perhaps some AI assisted tweaks of my own. 
 
 This version gets loaded over top of the existing workshop plugin. It doesn't replace or change it in any way (as long you don't copy it into the workshop folder of course) and it's easy to revert if needed.
 ## Fixes and new Features compared to the current workshop version
