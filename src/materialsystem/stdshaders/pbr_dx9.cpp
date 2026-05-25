@@ -50,6 +50,7 @@ const Sampler_t SAMPLER_ENVMAP			= SHADER_SAMPLER14;
 const Sampler_t SAMPLER_PROJTEXCOOKIE	= SHADER_SAMPLER12; // These exclude eachother with EnvMap and Lightmap
 const Sampler_t SAMPLER_RANDOMROTATION	= SHADER_SAMPLER13;
 const Sampler_t SAMPLER_SHADOWDEPTH		= SHADER_SAMPLER14;
+const Sampler_t SAMPLER_ENVMAP_FLASHLIGHT = SHADER_SAMPLER15;
 
 // Convars
 static ConVar pbr_version("pbr_version", "1.05", FCVAR_CHEAT);
@@ -116,6 +117,8 @@ BEGIN_VS_SHADER(PBR, "PBR shader")
 		SHADER_PARAM(DualLobe,					SHADER_PARAM_TYPE_BOOL, "", "")
 		SHADER_PARAM(DualLobe_RoughnessBias,	SHADER_PARAM_TYPE_FLOAT, "", "")
 		SHADER_PARAM(DualLobe_LerpFactor,		SHADER_PARAM_TYPE_FLOAT, "", "")
+
+		SHADER_PARAM(EnvDlightFactor, SHADER_PARAM_TYPE_FLOAT, "1.0", "Controls the dynamic light masking on the envmap (0 = legacy, 1 = masked, >1 = overdrive)")
 
 	END_SHADER_PARAMS;
 
@@ -484,6 +487,7 @@ BEGIN_VS_SHADER(PBR, "PBR shader")
 				pShaderShadow->EnableTexture(SAMPLER_SHADOWDEPTH, true);
 				pShaderShadow->EnableSRGBRead(SAMPLER_SHADOWDEPTH, false);
 				pShaderShadow->SetShadowDepthFiltering(SAMPLER_SHADOWDEPTH);
+				pShaderShadow->EnableTexture(SAMPLER_ENVMAP_FLASHLIGHT, true);
 			}
 			else
 			{
@@ -854,6 +858,8 @@ BEGIN_VS_SHADER(PBR, "PBR shader")
 
 			float cMRAOExponent[4];
 			params[MRAOExponent]->GetVecValue(cMRAOExponent, 3);
+			// --- SNEAK OUR FACTOR INTO THE EMPTY 'W' CHANNEL ---
+			cMRAOExponent[3] = GetFloatParam(EnvDlightFactor, params, 1.0f);
 			pShaderAPI->SetPixelShaderConstant(PSREG_PBR_MRAOEXPONENT, cMRAOExponent);
 			
 			
@@ -899,6 +905,16 @@ BEGIN_VS_SHADER(PBR, "PBR shader")
 
 				BindTexture(SAMPLER_PROJTEXCOOKIE, flashlightState.m_pSpotlightTexture, flashlightState.m_nSpotlightTextureFrame);
 
+				// --- CUSTOM ENVMAP FLASHLIGHT BIND ---
+				// Send the Environment Map to Slot 15 so we can mask it with shadows
+				if (mat_specular.GetBool() && bHasEnvMap)
+				{
+					BindTexture(SAMPLER_ENVMAP_FLASHLIGHT, EnvMap, 0);
+				}
+				else
+				{
+					pShaderAPI->BindStandardTexture(SAMPLER_ENVMAP_FLASHLIGHT, TEXTURE_BLACK);
+				}
 				// Set the flashlight attenuation factors
 				atten[0] = flashlightState.m_fConstantAtten;
 				atten[1] = flashlightState.m_fLinearAtten;

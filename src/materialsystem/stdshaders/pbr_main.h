@@ -79,6 +79,7 @@ const float4 cMRAOBias : register(PSREG_PBR_MRAOBIAS);
 
 const float4 cMRAOExponent : register(PSREG_PBR_MRAOEXPONENT);
 #define g_f3MRAOExponent (cMRAOExponent.xyz)
+#define g_flEnvDlightFactor (cMRAOExponent.w)
 
 //==================================================================================================
 // Samplers
@@ -114,6 +115,9 @@ sampler Sampler_ProjTexCookie		: register(s12);
 sampler Sampler_RandRot				: register(s13);
 sampler Sampler_ShadowDepth			: register(s14);
 #endif
+
+// ENVMAP Dlight Aware Feature
+sampler Sampler_Envmap_Flashlight : register(s15);
 
 // FIXME: use VFace Register to fix $NoCull Lighting
 struct PS_INPUT
@@ -336,7 +340,14 @@ float4 main(PS_INPUT i) : COLOR
 			// Note that Brushes get Lightmaps with Direct and Indirect Lighting combined
 			// So this is Direct Diffuse + Indirect Diffuse + Indirect Specular for Brushes
 			// Mostly correct for us
-			f3IndirectLighting = (f3DiffuseLighting + f3IndirectSpecular) * f1AmbientOcclusion;
+			// f3IndirectLighting = (f3DiffuseLighting + f3IndirectSpecular) * f1AmbientOcclusion;
+
+			// ENVMAP Dlight Aware feature
+			// Calculate Base Visibility (Clamps to 0 if factor is >= 1)
+			float flBaseVisibility = saturate(1.0f - g_flEnvDlightFactor);
+
+			// Restore the base pass, multiplied by the visibility factor
+			f3IndirectLighting = (f3DiffuseLighting + f3IndirectSpecular) * f1AmbientOcclusion * flBaseVisibility;
 		}
 	//	#endif
 	#endif
@@ -359,7 +370,7 @@ float4 main(PS_INPUT i) : COLOR
 			// FIXME: Move into BRDF
 			float f1MicroShadow = ApplyMicroShadow(f1AmbientOcclusion, f3NormalWS, f3LightDir, 1.0f);
 			f3LightColor *= lerp(1.0f, f1MicroShadow, g_f1MicroShadowFactor);
-	
+
 			// Diffuse and Specular
 
 			float3 f3DirectAndSpecular = calculateLight(f3LightDir, f3LightColor, f3ViewDir,
@@ -402,11 +413,16 @@ float4 main(PS_INPUT i) : COLOR
 		flashlightColor *= cFlashlightColor.xyz;
 	
 		float fAtten = saturate(dot(cFlashlightAttenuationFactors.xyz, float3(1.0, 1.0 / dist, 1.0 / distSquared)));
+
+		// --- ENVMAP Dlight Awarness Feature ---
+		float flSafeShadowMask = 1.0f;
 	
 		#if FLASHLIGHTSHADOWS
 			float flashlightShadow = DoFlashlightShadow(Sampler_ShadowDepth, Sampler_RandRot, vProjCoords, f3ProjPos, FLASHLIGHTDEPTHFILTERMODE, cShadowTweaks, true);
 			float flashlightAttenuated = lerp(flashlightShadow, 1.0, cShadowTweaks.y);         // Blend between fully attenuated and not attenuated
 			flashlightShadow = saturate(lerp(flashlightAttenuated, flashlightShadow, fAtten));  // Blend between shadow and above, according to light attenuation
+			// --- ENVMAP Dlight Awarness Feature ---
+			flSafeShadowMask = flashlightShadow;
 	
 			flashlightColor *= flashlightShadow;
 		#endif
@@ -449,6 +465,32 @@ float4 main(PS_INPUT i) : COLOR
 				f1Thickness, g_f3SSSColor, g_f1SSSIntensity, g_f1SSSPower);
 			f3DirectLighting += f3SSSContribution * flashLightIntensity;
 		#endif
+			// --- Dlight Aware ENVMAP Feature ---
+		// Recalculate the reflection vector for the envmap
+			float4 f4ReflectUV = float4(f3Reflect, f1Roughness * g_f1EnvMapMips);
+
+			// Sample the Envmap using new s15 sampler
+			float3 f3DynamicEnvMap = ENV_MAP_SCALE * texCUBElod(Sampler_Envmap_Flashlight, f4ReflectUV).rgb;
+
+			// EnvBRDFApprox to keep it physically grounded
+			f3DynamicEnvMap *= EnvBRDFApprox(f3SpecularColor, f1Roughness, f1NdotV);
+
+			// 1. Calculate how directly the light hits the surface (0.0 to 1.0)
+			float f1NdotL = saturate(dot(f3NormalWS, flashLightIn));
+
+			// 2. Extract the true brightness of the light hitting this pixel
+			// flashLightIntensity already includes shadows, distance falloff, and the SFM light color!
+			float flLightLuminance = dot(flashLightIntensity, float3(0.299f, 0.587f, 0.114f));
+
+			// 3. Create a smooth mask based on the light's strength and surface angle
+			float flDynamicMask = saturate(flLightLuminance * f1NdotL);
+
+			// Mask it using a smooth curve, ambient occlusion, and the new VMT parameter
+			// If factor is 1, it behaves normally. If > 1, it overdrives the brightness
+			f3DynamicEnvMap *= (flDynamicMask * g_flEnvDlightFactor * f1AmbientOcclusion);
+
+			f3DirectLighting += f3DynamicEnvMap;
+			// -----------------------------------
 	}
 	#endif
 	
