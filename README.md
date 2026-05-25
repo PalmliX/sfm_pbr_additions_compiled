@@ -15,9 +15,9 @@ This version gets loaded over top of the existing workshop plugin. It doesn't re
 
 # Install
 ## *You MUST already be subscribed to the PBR Shader from the workshop and it must be working*
-#### 1) Download SFM-PBR-shader_modifiedthexapbr.zip from the releases page and extract it into your SFM usermod folder so you have usermod/addons and usermod/shaders when finished.
+#### 1) Download the latest SFM-PBR-shader_modifiedthexapbr.zip from the releases page and extract it into your SFM usermod folder so you have usermod/addons and usermod/shaders when finished.
 #### *Alternatively, you can create a new mod folder and make sure it's loaded ABOVE the workshop folder in usermod/gameinfo.txt* 
-#### 2) Run SFM, it's that easy! Try one of the new shader features/parameters in your vmt file to see if it's working. If you want to revert back to the workshop version simply rename, delete, or move the extracted file: *addons/shader_zmrpbr.vdf*
+#### 2) Run SFM, it's that easy! Try one of the new shader features/parameters in your vmt file to see if it's working. If you want to revert back to the workshop version simply rename, delete, or move the addons and shaders folders that you extracted.
 
 # VMT Parameters
 ***PLEASE NOTE:*** *I wasn't able to get a specular/glossiness setup working with this shader so for now I will only be focusing on metallic/roughnes.*
