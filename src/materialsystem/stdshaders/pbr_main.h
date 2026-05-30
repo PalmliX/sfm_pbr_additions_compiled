@@ -496,12 +496,13 @@ float4 main(PS_INPUT i) : COLOR
 	
 	float3 f3CombinedLighting = f3DirectLighting + f3IndirectLighting;
 
-	// When Lighting is disabled the Ambient Cube is fullbright'ed
-	// Since I disabled all the Indirect Lighting Code we need to account for it differently.
-	// This will essentially do the same Thing:
-	//#if (SFM_BLACKBOX_MODE && !FLASHLIGHT)
-	//	f3CombinedLighting += f3DiffuseColor * f1AmbientOcclusion * g_f1Fullbright;
-	//#endif
+	// FIX: When SFM lighting is disabled (mat_fullbright 1), metallic materials appear black
+	// because they have no diffuse color and specular reflections aren't evaluated.
+	// We lerp the final lighting to the raw material colors (Diffuse + Specular), 
+	// multiplied by the combined AO/SSAO, based on the fullbright uniform.
+#if !FLASHLIGHT
+	f3CombinedLighting = lerp(f3CombinedLighting, (f3DiffuseColor + f3SpecularColor) * f1AmbientOcclusion, g_f1Fullbright);
+#endif
 
 	// This is not !FLASHLIGHT. Projected Textures disappear into Fog
 	float f1FogFactor = CalcPixelFogFactor(PIXELFOGTYPE, cFogParams, g_f3CameraPos, f3WorldPos.xyz, f3ProjPos.z);
