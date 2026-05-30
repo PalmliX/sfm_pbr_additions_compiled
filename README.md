@@ -9,7 +9,7 @@ This version gets loaded over top of the existing workshop plugin. It doesn't re
 #### $nocull materials are now lit properly i.e. they don't become lit from behind.
 #### Many additional material settings for things like normal map intensity, channel inverting, metallic/roughness bias, exponent and more!
 ## Fixes and new Features compared to @WhiteRedDragons fork
-#### Restored cubemap rendering and added a feature whereby envmaps (cubemaps) no longer glow in the dark and are now masked by SFM dynamic lights. 
+#### Restored cubemap rendering and added a feature whereby envmaps (cubemaps) no longer glow in the dark and are now masked by SFM dynamic lights. Also metals are no longer rendered black when lighting is disabled. 
 #### This feature is controllable (off, blend, or overdrive) via a material parameter ($envdlightfactor). See parameters list below for more details.
 #### *These changes were written with the help of AI and as is fairly hacky as you'd imagine since it looks like based on @WhiteRedDragons code comments they're working on a better solution for all of it so this is only temporary until then.*
 
