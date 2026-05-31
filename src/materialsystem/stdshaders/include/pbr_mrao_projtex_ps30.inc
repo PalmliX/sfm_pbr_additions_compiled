@@ -28,6 +28,7 @@ class pbr_mrao_projtex_ps30_Static_Index
 	unsigned int m_nWRINKLEMAP : 2;
 	unsigned int m_nSUBSURFACESCATTERING : 2;
 	unsigned int m_nDUALLOBE : 2;
+	unsigned int m_nPLANARREFLECTION : 2;
 #ifdef _DEBUG
 	bool m_bFLASHLIGHTDEPTHFILTERMODE : 1;
 	bool m_bPARALLAXOCCLUSION : 1;
@@ -35,6 +36,7 @@ class pbr_mrao_projtex_ps30_Static_Index
 	bool m_bWRINKLEMAP : 1;
 	bool m_bSUBSURFACESCATTERING : 1;
 	bool m_bDUALLOBE : 1;
+	bool m_bPLANARREFLECTION : 1;
 #endif	// _DEBUG
 public:
 	void SetFLASHLIGHTDEPTHFILTERMODE( int i )
@@ -91,6 +93,15 @@ public:
 #endif	// _DEBUG
 	}
 
+	void SetPLANARREFLECTION( int i )
+	{
+		Assert( i >= 0 && i <= 1 );
+		m_nPLANARREFLECTION = i;
+#ifdef _DEBUG
+		m_bPLANARREFLECTION = true;
+#endif	// _DEBUG
+	}
+
 	pbr_mrao_projtex_ps30_Static_Index(  )
 	{
 		m_nFLASHLIGHTDEPTHFILTERMODE = 0;
@@ -99,6 +110,7 @@ public:
 		m_nWRINKLEMAP = 0;
 		m_nSUBSURFACESCATTERING = 0;
 		m_nDUALLOBE = 0;
+		m_nPLANARREFLECTION = 0;
 #ifdef _DEBUG
 		m_bFLASHLIGHTDEPTHFILTERMODE = false;
 		m_bPARALLAXOCCLUSION = false;
@@ -106,19 +118,20 @@ public:
 		m_bWRINKLEMAP = false;
 		m_bSUBSURFACESCATTERING = false;
 		m_bDUALLOBE = false;
+		m_bPLANARREFLECTION = false;
 #endif	// _DEBUG
 	}
 
 	int GetIndex() const
 	{
-		Assert( m_bFLASHLIGHTDEPTHFILTERMODE && m_bPARALLAXOCCLUSION && m_bWORLD_NORMAL && m_bWRINKLEMAP && m_bSUBSURFACESCATTERING && m_bDUALLOBE );
+		Assert( m_bFLASHLIGHTDEPTHFILTERMODE && m_bPARALLAXOCCLUSION && m_bWORLD_NORMAL && m_bWRINKLEMAP && m_bSUBSURFACESCATTERING && m_bDUALLOBE && m_bPLANARREFLECTION );
 		AssertMsg( !( ( m_nWRINKLEMAP != 0 ) && ( m_nPARALLAXOCCLUSION != 0 ) ), "Invalid combo combination ( ( WRINKLEMAP != 0 ) && ( PARALLAXOCCLUSION != 0 ) )" );
 		AssertMsg( !( ( m_nSUBSURFACESCATTERING != 0 ) && ( m_nPARALLAXOCCLUSION != 0 ) ), "Invalid combo combination ( ( SUBSURFACESCATTERING != 0 ) && ( PARALLAXOCCLUSION != 0 ) )" );
-		return ( 12 * m_nFLASHLIGHTDEPTHFILTERMODE ) + ( 36 * m_nPARALLAXOCCLUSION ) + ( 72 * m_nWORLD_NORMAL ) + ( 144 * m_nWRINKLEMAP ) + ( 288 * m_nSUBSURFACESCATTERING ) + ( 576 * m_nDUALLOBE ) + 0;
+		return ( 12 * m_nFLASHLIGHTDEPTHFILTERMODE ) + ( 36 * m_nPARALLAXOCCLUSION ) + ( 72 * m_nWORLD_NORMAL ) + ( 144 * m_nWRINKLEMAP ) + ( 288 * m_nSUBSURFACESCATTERING ) + ( 576 * m_nDUALLOBE ) + ( 1152 * m_nPLANARREFLECTION ) + 0;
 	}
 };
 
-#define shaderStaticTest_pbr_mrao_projtex_ps30 psh_forgot_to_set_static_FLASHLIGHTDEPTHFILTERMODE + psh_forgot_to_set_static_PARALLAXOCCLUSION + psh_forgot_to_set_static_WORLD_NORMAL + psh_forgot_to_set_static_WRINKLEMAP + psh_forgot_to_set_static_SUBSURFACESCATTERING + psh_forgot_to_set_static_DUALLOBE
+#define shaderStaticTest_pbr_mrao_projtex_ps30 psh_forgot_to_set_static_FLASHLIGHTDEPTHFILTERMODE + psh_forgot_to_set_static_PARALLAXOCCLUSION + psh_forgot_to_set_static_WORLD_NORMAL + psh_forgot_to_set_static_WRINKLEMAP + psh_forgot_to_set_static_SUBSURFACESCATTERING + psh_forgot_to_set_static_DUALLOBE + psh_forgot_to_set_static_PLANARREFLECTION
 
 
 class pbr_mrao_projtex_ps30_Dynamic_Index

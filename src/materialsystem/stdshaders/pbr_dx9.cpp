@@ -119,6 +119,10 @@ BEGIN_VS_SHADER(PBR, "PBR shader")
 		SHADER_PARAM(DualLobe_LerpFactor,		SHADER_PARAM_TYPE_FLOAT, "", "")
 
 		SHADER_PARAM(EnvDlightFactor, SHADER_PARAM_TYPE_FLOAT, "1.0", "Controls the dynamic light masking on the envmap (0 = legacy, 1 = masked, >1 = overdrive)")
+		// --- PLANAR REFLECTIONS ---
+		SHADER_PARAM(PlanarReflection, SHADER_PARAM_TYPE_BOOL, "0", "Enable Planar Reflections")
+		SHADER_PARAM(PlanarReflectionTexture, SHADER_PARAM_TYPE_TEXTURE, "_rt_camera", "Texture for planar reflection")
+		SHADER_PARAM(PlanarReflectionBlurScale, SHADER_PARAM_TYPE_VEC2, "[1.0 1.0]", "X and Y Blur Scale for Planar Reflections")
 
 	END_SHADER_PARAMS;
 
@@ -253,6 +257,11 @@ BEGIN_VS_SHADER(PBR, "PBR shader")
 		LoadCubeMap(EnvMap, nEnvMapFlags);
 
 		LoadTexture(EmissionTexture, TEXTUREFLAGS_SRGB);
+
+		if (params[PlanarReflection]->GetIntValue())
+		{
+			LoadTexture(PlanarReflectionTexture);
+		}
 
 		// FIXME: This wasted AN ENTIRE samplers for some Greyscale Information that could be derived from an existing free Color Channel
 		LoadTexture(ThicknessTexture);
@@ -509,6 +518,13 @@ BEGIN_VS_SHADER(PBR, "PBR shader")
 				}
 			}
 
+			// In SHADER_DRAW -> SHADOW_STATE
+			if (params[PlanarReflection]->GetIntValue())
+			{
+				pShaderShadow->EnableTexture((Sampler_t)11, true);
+				pShaderShadow->EnableSRGBRead((Sampler_t)11, true); // RTs usually contain sRGB color data
+			}
+
 			//==========================================================================//
 			// Set Static Shaders
 			//==========================================================================//
@@ -525,12 +541,13 @@ BEGIN_VS_SHADER(PBR, "PBR shader")
 //          SET_STATIC_VERTEX_SHADER_COMBO(LIGHTMAPPED, bLightMapped);
 			SET_STATIC_VERTEX_SHADER(pbr_vs30);
 
-			if(bHasFlashlight)
+			if (bHasFlashlight)
 			{
 				// TODO: Check if the ATI Shadow Format Issue was fixed on SFM
-				if(bSpecularGlossiness)
+				if (bSpecularGlossiness)
 				{
 					DECLARE_STATIC_PIXEL_SHADER(pbr_sg_projtex_ps30);
+					SET_STATIC_PIXEL_SHADER_COMBO(PLANARREFLECTION, params[PlanarReflection]->GetIntValue());
 					SET_STATIC_PIXEL_SHADER_COMBO(FLASHLIGHTDEPTHFILTERMODE, g_pHardwareConfig->GetShadowFilterMode());
 					SET_STATIC_PIXEL_SHADER_COMBO(PARALLAXOCCLUSION, bHasParallax);
 					SET_STATIC_PIXEL_SHADER_COMBO(WORLD_NORMAL, bWorldNormal);
@@ -542,6 +559,7 @@ BEGIN_VS_SHADER(PBR, "PBR shader")
 				else
 				{
 					DECLARE_STATIC_PIXEL_SHADER(pbr_mrao_projtex_ps30);
+					SET_STATIC_PIXEL_SHADER_COMBO(PLANARREFLECTION, params[PlanarReflection]->GetIntValue());
 					SET_STATIC_PIXEL_SHADER_COMBO(FLASHLIGHTDEPTHFILTERMODE, g_pHardwareConfig->GetShadowFilterMode());
 					SET_STATIC_PIXEL_SHADER_COMBO(PARALLAXOCCLUSION, bHasParallax);
 					SET_STATIC_PIXEL_SHADER_COMBO(WORLD_NORMAL, bWorldNormal);
@@ -556,6 +574,7 @@ BEGIN_VS_SHADER(PBR, "PBR shader")
 				if (bSpecularGlossiness)
 				{
 					DECLARE_STATIC_PIXEL_SHADER(pbr_sg_ps30);
+					SET_STATIC_PIXEL_SHADER_COMBO(PLANARREFLECTION, params[PlanarReflection]->GetIntValue());
 					SET_STATIC_PIXEL_SHADER_COMBO(EMISSIVE, bHasEmissionTexture); // FIXME: Make additively rendered pass to save on Samplers
 					SET_STATIC_PIXEL_SHADER_COMBO(PARALLAXOCCLUSION, bHasParallax);
 					SET_STATIC_PIXEL_SHADER_COMBO(WORLD_NORMAL, bWorldNormal);
@@ -567,6 +586,7 @@ BEGIN_VS_SHADER(PBR, "PBR shader")
 				else
 				{
 					DECLARE_STATIC_PIXEL_SHADER(pbr_mrao_ps30);
+					SET_STATIC_PIXEL_SHADER_COMBO(PLANARREFLECTION, params[PlanarReflection]->GetIntValue());
 					SET_STATIC_PIXEL_SHADER_COMBO(EMISSIVE, bHasEmissionTexture); // FIXME: Make additively rendered pass to save on Samplers
 					SET_STATIC_PIXEL_SHADER_COMBO(PARALLAXOCCLUSION, bHasParallax);
 					SET_STATIC_PIXEL_SHADER_COMBO(WORLD_NORMAL, bWorldNormal);
@@ -721,6 +741,19 @@ BEGIN_VS_SHADER(PBR, "PBR shader")
 				BindTexture(SAMPLER_SSAO, pAOTexture);
 			else
 				pShaderAPI->BindStandardTexture(SAMPLER_SSAO, TEXTURE_WHITE);
+
+			// In SHADER_DRAW -> DYNAMIC_STATE
+			if (params[PlanarReflection]->GetIntValue())
+			{
+				BindTexture((Sampler_t)11, PlanarReflectionTexture, -1);
+
+				float cPlanarBlur[4] = { 1.0f, 1.0f, 0.0f, 0.0f };
+				if (params[PlanarReflectionBlurScale]->IsDefined())
+				{
+					params[PlanarReflectionBlurScale]->GetVecValue(cPlanarBlur, 2);
+				}
+				pShaderAPI->SetPixelShaderConstant(45, cPlanarBlur);
+			}
 
 			//==========================================================================//
 			// Setup Constant Registers

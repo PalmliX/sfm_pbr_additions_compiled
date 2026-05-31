@@ -61,6 +61,11 @@ const float4 cAABB						: register(PSREG_UBERLIGHT_AABB);
 const float4x4 xmFlashlightWorldToLight : register(PSREG_UBERLIGHT_WORLD_TO_LIGHT);
 #endif
 
+#if PLANARREFLECTION
+sampler Sampler_PlanarReflection : register(s11);
+const float4 g_PlanarBlurScale : register(c45);
+#endif
+
 const float4 cVariousControls		: register(PSREG_PBR_EXTRA_FACTORS); // Emissive, specular factor, SSS intensity, SSS power scale
 #define g_f1EmissiveFactor (cVariousControls.x)
 #define g_f1SpecularFactor (cVariousControls.y)
@@ -341,6 +346,45 @@ float4 main(PS_INPUT i) : COLOR
 			// So this is Direct Diffuse + Indirect Diffuse + Indirect Specular for Brushes
 			// Mostly correct for us
 			// f3IndirectLighting = (f3DiffuseLighting + f3IndirectSpecular) * f1AmbientOcclusion;
+
+			// ==========================================
+			// PLANAR REFLECTION OVERRIDE
+			// ==========================================
+		#if PLANARREFLECTION
+			// 1. Hijack the mesh's physical UVs
+			float2 screenUV = f2TexCoord;
+
+			// 2. Perturb UVs using the World Normal map (so reflections warp over bumps)
+			screenUV += f3NormalWS.xy * 0.05f;
+
+			// 3. Calculate Blur Spread using Roughness and VMT Scale
+			float2 blurSpread = g_PlanarBlurScale.xy * f1Roughness * 0.005f;
+			// 4. Execute 9-Tap Gaussian Blur
+			float3 f3PlanarColor = 0.0f;
+
+			// Far negative taps
+			f3PlanarColor += tex2D(Sampler_PlanarReflection, screenUV - blurSpread * 4.0).rgb * 0.00390625f;
+			f3PlanarColor += tex2D(Sampler_PlanarReflection, screenUV - blurSpread * 3.0).rgb * 0.03125f;
+
+			// Near negative taps
+			f3PlanarColor += tex2D(Sampler_PlanarReflection, screenUV - blurSpread * 2.0).rgb * 0.109375f;
+			f3PlanarColor += tex2D(Sampler_PlanarReflection, screenUV - blurSpread * 1.0).rgb * 0.21875f;
+
+			// Center tap (Highest weight)
+			f3PlanarColor += tex2D(Sampler_PlanarReflection, screenUV).rgb * 0.2734375f;
+
+			// Near positive taps
+			f3PlanarColor += tex2D(Sampler_PlanarReflection, screenUV + blurSpread * 1.0).rgb * 0.21875f;
+			f3PlanarColor += tex2D(Sampler_PlanarReflection, screenUV + blurSpread * 2.0).rgb * 0.109375f;
+
+			// Far positive taps
+			f3PlanarColor += tex2D(Sampler_PlanarReflection, screenUV + blurSpread * 3.0).rgb * 0.03125f;
+			f3PlanarColor += tex2D(Sampler_PlanarReflection, screenUV + blurSpread * 4.0).rgb * 0.00390625f;
+
+			// 5. Overwrite the standard cubemap reflection with our Planar mirror
+			f3IndirectSpecular = f3PlanarColor * EnvBRDFApprox(f3SpecularColor, f1Roughness, f1NdotV);
+#endif
+			// ==========================================
 
 			// ENVMAP Dlight Aware feature
 			// Calculate Base Visibility (Clamps to 0 if factor is >= 1)

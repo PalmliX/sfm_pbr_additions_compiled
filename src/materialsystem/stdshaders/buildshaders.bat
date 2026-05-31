@@ -109,7 +109,7 @@ if not exist %shaderDir% mkdir %shaderDir%
 if not exist %shaderDir%\fxc mkdir %shaderDir%\fxc
 REM Nuke some files that we will add to later.
 
-set SHVER=20b
+set SHVER=30
 if defined IS30 (
 	set SHVER=30
 )

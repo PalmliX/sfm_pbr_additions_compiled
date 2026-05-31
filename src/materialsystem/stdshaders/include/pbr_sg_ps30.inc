@@ -30,6 +30,7 @@ class pbr_sg_ps30_Static_Index
 	unsigned int m_nWORLD_NORMAL : 2;
 	unsigned int m_nWRINKLEMAP : 2;
 	unsigned int m_nSUBSURFACESCATTERING : 2;
+	unsigned int m_nPLANARREFLECTION : 2;
 	unsigned int m_nDUALLOBE : 2;
 #ifdef _DEBUG
 	bool m_bEMISSIVE : 1;
@@ -37,6 +38,7 @@ class pbr_sg_ps30_Static_Index
 	bool m_bWORLD_NORMAL : 1;
 	bool m_bWRINKLEMAP : 1;
 	bool m_bSUBSURFACESCATTERING : 1;
+	bool m_bPLANARREFLECTION : 1;
 	bool m_bDUALLOBE : 1;
 #endif	// _DEBUG
 public:
@@ -85,6 +87,15 @@ public:
 #endif	// _DEBUG
 	}
 
+	void SetPLANARREFLECTION( int i )
+	{
+		Assert( i >= 0 && i <= 1 );
+		m_nPLANARREFLECTION = i;
+#ifdef _DEBUG
+		m_bPLANARREFLECTION = true;
+#endif	// _DEBUG
+	}
+
 	void SetDUALLOBE( int i )
 	{
 		Assert( i >= 0 && i <= 1 );
@@ -101,6 +112,7 @@ public:
 		m_nWORLD_NORMAL = 0;
 		m_nWRINKLEMAP = 0;
 		m_nSUBSURFACESCATTERING = 0;
+		m_nPLANARREFLECTION = 0;
 		m_nDUALLOBE = 0;
 #ifdef _DEBUG
 		m_bEMISSIVE = false;
@@ -108,20 +120,21 @@ public:
 		m_bWORLD_NORMAL = false;
 		m_bWRINKLEMAP = false;
 		m_bSUBSURFACESCATTERING = false;
+		m_bPLANARREFLECTION = false;
 		m_bDUALLOBE = false;
 #endif	// _DEBUG
 	}
 
 	int GetIndex() const
 	{
-		Assert( m_bEMISSIVE && m_bPARALLAXOCCLUSION && m_bWORLD_NORMAL && m_bWRINKLEMAP && m_bSUBSURFACESCATTERING && m_bDUALLOBE );
+		Assert( m_bEMISSIVE && m_bPARALLAXOCCLUSION && m_bWORLD_NORMAL && m_bWRINKLEMAP && m_bSUBSURFACESCATTERING && m_bPLANARREFLECTION && m_bDUALLOBE );
 		AssertMsg( !( ( m_nWRINKLEMAP != 0 ) && ( m_nPARALLAXOCCLUSION != 0 ) ), "Invalid combo combination ( ( WRINKLEMAP != 0 ) && ( PARALLAXOCCLUSION != 0 ) )" );
 		AssertMsg( !( ( m_nSUBSURFACESCATTERING != 0 ) && ( m_nPARALLAXOCCLUSION != 0 ) ), "Invalid combo combination ( ( SUBSURFACESCATTERING != 0 ) && ( PARALLAXOCCLUSION != 0 ) )" );
-		return ( 60 * m_nEMISSIVE ) + ( 120 * m_nPARALLAXOCCLUSION ) + ( 240 * m_nWORLD_NORMAL ) + ( 480 * m_nWRINKLEMAP ) + ( 960 * m_nSUBSURFACESCATTERING ) + ( 1920 * m_nDUALLOBE ) + 0;
+		return ( 60 * m_nEMISSIVE ) + ( 120 * m_nPARALLAXOCCLUSION ) + ( 240 * m_nWORLD_NORMAL ) + ( 480 * m_nWRINKLEMAP ) + ( 960 * m_nSUBSURFACESCATTERING ) + ( 1920 * m_nPLANARREFLECTION ) + ( 3840 * m_nDUALLOBE ) + 0;
 	}
 };
 
-#define shaderStaticTest_pbr_sg_ps30 psh_forgot_to_set_static_EMISSIVE + psh_forgot_to_set_static_PARALLAXOCCLUSION + psh_forgot_to_set_static_WORLD_NORMAL + psh_forgot_to_set_static_WRINKLEMAP + psh_forgot_to_set_static_SUBSURFACESCATTERING + psh_forgot_to_set_static_DUALLOBE
+#define shaderStaticTest_pbr_sg_ps30 psh_forgot_to_set_static_EMISSIVE + psh_forgot_to_set_static_PARALLAXOCCLUSION + psh_forgot_to_set_static_WORLD_NORMAL + psh_forgot_to_set_static_WRINKLEMAP + psh_forgot_to_set_static_SUBSURFACESCATTERING + psh_forgot_to_set_static_PLANARREFLECTION + psh_forgot_to_set_static_DUALLOBE
 
 
 class pbr_sg_ps30_Dynamic_Index

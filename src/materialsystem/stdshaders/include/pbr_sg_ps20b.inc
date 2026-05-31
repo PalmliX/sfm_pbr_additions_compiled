@@ -23,7 +23,7 @@
 
 #pragma once
 #include "shaderlib/cshader.h"
-class pbr_mrao_ps30_Static_Index
+class pbr_sg_ps20b_Static_Index
 {
 	unsigned int m_nEMISSIVE : 2;
 	unsigned int m_nPARALLAXOCCLUSION : 2;
@@ -105,7 +105,7 @@ public:
 #endif	// _DEBUG
 	}
 
-	pbr_mrao_ps30_Static_Index(  )
+	pbr_sg_ps20b_Static_Index(  )
 	{
 		m_nEMISSIVE = 0;
 		m_nPARALLAXOCCLUSION = 0;
@@ -134,10 +134,10 @@ public:
 	}
 };
 
-#define shaderStaticTest_pbr_mrao_ps30 psh_forgot_to_set_static_EMISSIVE + psh_forgot_to_set_static_PARALLAXOCCLUSION + psh_forgot_to_set_static_WORLD_NORMAL + psh_forgot_to_set_static_WRINKLEMAP + psh_forgot_to_set_static_SUBSURFACESCATTERING + psh_forgot_to_set_static_PLANARREFLECTION + psh_forgot_to_set_static_DUALLOBE
+#define shaderStaticTest_pbr_sg_ps20b psh_forgot_to_set_static_EMISSIVE + psh_forgot_to_set_static_PARALLAXOCCLUSION + psh_forgot_to_set_static_WORLD_NORMAL + psh_forgot_to_set_static_WRINKLEMAP + psh_forgot_to_set_static_SUBSURFACESCATTERING + psh_forgot_to_set_static_PLANARREFLECTION + psh_forgot_to_set_static_DUALLOBE
 
 
-class pbr_mrao_ps30_Dynamic_Index
+class pbr_sg_ps20b_Dynamic_Index
 {
 	unsigned int m_nWRITEWATERFOGTODESTALPHA : 2;
 	unsigned int m_nPIXELFOGTYPE : 2;
@@ -186,7 +186,7 @@ public:
 #endif	// _DEBUG
 	}
 
-	pbr_mrao_ps30_Dynamic_Index(  )
+	pbr_sg_ps20b_Dynamic_Index(  )
 	{
 		m_nWRITEWATERFOGTODESTALPHA = 0;
 		m_nPIXELFOGTYPE = 0;
@@ -211,5 +211,5 @@ public:
 	}
 };
 
-#define shaderDynamicTest_pbr_mrao_ps30 psh_forgot_to_set_dynamic_WRITEWATERFOGTODESTALPHA + psh_forgot_to_set_dynamic_PIXELFOGTYPE + psh_forgot_to_set_dynamic_NUM_LIGHTS + psh_forgot_to_set_dynamic_WRITE_DEPTH_TO_DESTALPHA
+#define shaderDynamicTest_pbr_sg_ps20b psh_forgot_to_set_dynamic_WRITEWATERFOGTODESTALPHA + psh_forgot_to_set_dynamic_PIXELFOGTYPE + psh_forgot_to_set_dynamic_NUM_LIGHTS + psh_forgot_to_set_dynamic_WRITE_DEPTH_TO_DESTALPHA
 
