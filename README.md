@@ -60,10 +60,22 @@ This version gets loaded over top of the existing workshop plugin. It doesn't re
 #### SSSIntensity				SHADER_PARAM_TYPE_FLOAT, "1.0" "SSS intensity")
 #### SSSPowerScale				SHADER_PARAM_TYPE_FLOAT, "1.0"
 #### "SSS power scale"
-#### MRAOMultiplier			SHADER_PARAM_TYPE_VEC3 
-#### (use this instead of old Metalness/Roughness/AO factor params)
-#### MRAOBias					SHADER_PARAM_TYPE_VEC3
-#### MRAOExponent				SHADER_PARAM_TYPE_VEC3
+#### MRAOMultiplier - Vector 3 - "[1 1 1]"
+These three parameters operate together to form a complete, real-time color-correction and level-adjustment system directly inside the shader. They allow you to tweak your Metalness, Roughness, and Ambient Occlusion values mathematically without ever having to re-open Photoshop or re-export your textures.
+If you look at how the texture is unpacked in stdshaders/pbr_main.h, all three vectors are combined into a single master equation:
+Final Value = saturate( MRAOMultiplier * pow(TextureValue, MRAOExponent) + MRAOBias )
+#### MRAOBias -  Vector 3 - "[0 0 0]"
+$MRAOBias (The Offset / Black Level)
+This is applied last. It is a flat addition or subtraction across the entire texture, effectively moving the "Black Point" up or down.
+Value of 0.0: No offset.
+Value of 0.2: Adds 20% brightness to every single pixel. Pure black becomes dark gray.
+Value of -0.2: Subtracts 20% brightness, crushing the darkest parts of your texture into pure black.
+#### MRAOExponent - Vector 3 - "[1 1 1]"
+(Gamma Curve)
+This is the pow() part of the math, and it is applied to your texture first. It acts exactly like a Gamma adjustment.
+Value of 1.0: The texture remains linear. No change.
+Value > 1.0 (e.g., 2.0): Darkens the midtones. The dark areas stay dark, the bright areas stay bright, but everything in between gets pushed lower. This increases contrast.
+Value < 1.0 (e.g., 0.5): Brightens the midtones. This decreases contrast and washes the map out slightly.
 #### MicroShadowBias			SHADER_PARAM_TYPE_FLOAT 
 #### (controls SSAO intensity)
 #### DualLobe					SHADER_PARAM_TYPE_BOOL, ""
