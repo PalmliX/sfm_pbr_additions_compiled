@@ -66,6 +66,9 @@ sampler Sampler_PlanarReflection : register(s11);
 const float4 g_PlanarBlurScale : register(c45);
 #endif
 
+// Catch the XYZ offsets from the C++ side
+const float3 cEnvmapOffset : register(c46);
+
 const float4 cVariousControls		: register(PSREG_PBR_EXTRA_FACTORS); // Emissive, specular factor, SSS intensity, SSS power scale
 #define g_f1EmissiveFactor (cVariousControls.x)
 #define g_f1SpecularFactor (cVariousControls.y)
@@ -293,12 +296,21 @@ float4 main(PS_INPUT i) : COLOR
 	
 	// Creation was non-normalized so normalize it now
 	f3ViewDir = normalize(f3ViewDir);
-	
-	// N.V
+
+	// N.V (Used for direct lighting and diffuse fresnel)
 	float f1NdotV = max(0, dot(f3NormalWS, f3ViewDir));
-	
-	// This is fine but why tf, do we not use A. The Stock Function for doing this B. the intrinsic reflect() Function
-	float3 f3Reflect = 2.0 * f1NdotV * f3NormalWS - f3ViewDir;
+
+	// --- ENVMAP TRANSLATION SPOOF ---
+	// Spoof the world position to simulate parallax/translation
+	float3 f3EnvWorldPos = f3WorldPos + cEnvmapOffset;
+	float3 f3EnvViewDir = normalize(g_f3CameraPos - f3EnvWorldPos);
+
+	// Calculate a secondary NdotV specifically for the spoofed angle
+	float f1EnvNdotV = max(0, dot(f3NormalWS, f3EnvViewDir));
+
+	// Calculate the spoofed reflection vector
+	float3 f3Reflect = 2.0 * f1EnvNdotV * f3NormalWS - f3EnvViewDir;
+	// --------------------------------
 	
 	//==================================================================================================
 	// Indirect Lighting
@@ -340,7 +352,7 @@ float4 main(PS_INPUT i) : COLOR
 			float3 f3IndirectSpecular = f3LookupHigh;
 		
 			// EnvBRDFApprox is ironically the most correct thing here
-			f3IndirectSpecular *= EnvBRDFApprox(f3SpecularColor, f1Roughness, f1NdotV);
+			f3IndirectSpecular *= EnvBRDFApprox(f3SpecularColor, f1Roughness, f1EnvNdotV);
 		
 			// Note that Brushes get Lightmaps with Direct and Indirect Lighting combined
 			// So this is Direct Diffuse + Indirect Diffuse + Indirect Specular for Brushes
@@ -382,7 +394,7 @@ float4 main(PS_INPUT i) : COLOR
 			f3PlanarColor += tex2D(Sampler_PlanarReflection, screenUV + blurSpread * 4.0).rgb * 0.00390625f;
 
 			// 5. Overwrite the standard cubemap reflection with our Planar mirror
-			f3IndirectSpecular = f3PlanarColor * EnvBRDFApprox(f3SpecularColor, f1Roughness, f1NdotV);
+			f3IndirectSpecular = f3PlanarColor * EnvBRDFApprox(f3SpecularColor, f1Roughness, f1EnvNdotV);
 #endif
 			// ==========================================
 
@@ -517,7 +529,7 @@ float4 main(PS_INPUT i) : COLOR
 			float3 f3DynamicEnvMap = ENV_MAP_SCALE * texCUBElod(Sampler_Envmap_Flashlight, f4ReflectUV).rgb;
 
 			// EnvBRDFApprox to keep it physically grounded
-			f3DynamicEnvMap *= EnvBRDFApprox(f3SpecularColor, f1Roughness, f1NdotV);
+			f3DynamicEnvMap *= EnvBRDFApprox(f3SpecularColor, f1Roughness, f1EnvNdotV);
 
 			// 1. Calculate how directly the light hits the surface (0.0 to 1.0)
 			float f1NdotL = saturate(dot(f3NormalWS, flashLightIn));

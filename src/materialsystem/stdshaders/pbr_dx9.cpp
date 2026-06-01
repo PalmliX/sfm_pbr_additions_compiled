@@ -119,10 +119,16 @@ BEGIN_VS_SHADER(PBR, "PBR shader")
 		SHADER_PARAM(DualLobe_LerpFactor,		SHADER_PARAM_TYPE_FLOAT, "", "")
 
 		SHADER_PARAM(EnvDlightFactor, SHADER_PARAM_TYPE_FLOAT, "1.0", "Controls the dynamic light masking on the envmap (0 = legacy, 1 = masked, >1 = overdrive)")
+
 		// --- PLANAR REFLECTIONS ---
 		SHADER_PARAM(PlanarReflection, SHADER_PARAM_TYPE_BOOL, "0", "Enable Planar Reflections")
 		SHADER_PARAM(PlanarReflectionTexture, SHADER_PARAM_TYPE_TEXTURE, "_rt_camera", "Texture for planar reflection")
 		SHADER_PARAM(PlanarReflectionBlurScale, SHADER_PARAM_TYPE_VEC2, "[1.0 1.0]", "X and Y Blur Scale for Planar Reflections")
+
+		// --- ENVMAP SPOOFING ---
+		SHADER_PARAM(EnvmapOffsetX, SHADER_PARAM_TYPE_FLOAT, "0.0", "Offset X for Envmap translation")
+		SHADER_PARAM(EnvmapOffsetY, SHADER_PARAM_TYPE_FLOAT, "0.0", "Offset Y for Envmap translation")
+		SHADER_PARAM(EnvmapOffsetZ, SHADER_PARAM_TYPE_FLOAT, "0.0", "Offset Z for Envmap translation")
 
 	END_SHADER_PARAMS;
 
@@ -187,6 +193,10 @@ BEGIN_VS_SHADER(PBR, "PBR shader")
 			if (!params[BumpStretch]->IsDefined())
 				params[BumpStretch]->SetStringValue(params[BumpMap]->GetStringValue());
 		}
+
+		InitFloatParam(EnvmapOffsetX, params, 0.0f);
+		InitFloatParam(EnvmapOffsetY, params, 0.0f);
+		InitFloatParam(EnvmapOffsetZ, params, 0.0f);
 
 		// NUKE: Default Value is 0 even if you don't set it
 		InitIntParam(BumpFrame, params, 0);
@@ -754,6 +764,14 @@ BEGIN_VS_SHADER(PBR, "PBR shader")
 				}
 				pShaderAPI->SetPixelShaderConstant(45, cPlanarBlur);
 			}
+
+			// --- ENVMAP TRANSLATION SPOOF ---
+			float cEnvOffset[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+			cEnvOffset[0] = params[EnvmapOffsetX]->GetFloatValue();
+			cEnvOffset[1] = params[EnvmapOffsetY]->GetFloatValue();
+			cEnvOffset[2] = params[EnvmapOffsetZ]->GetFloatValue();
+			pShaderAPI->SetPixelShaderConstant(46, cEnvOffset);
+			// --------------------------------
 
 			//==========================================================================//
 			// Setup Constant Registers
