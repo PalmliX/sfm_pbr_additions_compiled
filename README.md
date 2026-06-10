@@ -11,6 +11,9 @@ This version gets loaded over top of the existing workshop plugin. It doesn't re
 ## Fixes and new Features compared to @WhiteRedDragons fork
 #### Restored cubemap rendering and added a feature whereby envmaps (cubemaps) no longer glow in the dark and are now masked by SFM dynamic lights. Also metals are no longer rendered black when lighting is disabled. 
 #### This feature is controllable (off, blend, or overdrive) via a material parameter ($envdlightfactor). See parameters list below for more details.
+#### rt_camera support which is affected by normal and roughness maps, and masked by metalness. It replaces envmap reflections so it should also work in diffuse/specular mode.
+#### Added an envmap translation offset, which allows animation of the envmap position in x,y,z in SFM to simulate movement, for example a car driving down a tunnel with the lights moving accross car.
+#### Car Paint shader with built-in paint speckle normals.
 #### *These changes were written with the help of AI and as is fairly hacky as you'd imagine since it looks like based on @WhiteRedDragons code comments they're working on a better solution for all of it so this is only temporary until then.*
 
 # Install
