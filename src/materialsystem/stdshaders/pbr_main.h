@@ -102,6 +102,7 @@ const float4 cMRAOExponent : register(PSREG_PBR_MRAOEXPONENT);
 
 const float4 cAlphaTestRef : register(c75);
 #define g_f1AlphaTestReference (cAlphaTestRef.x)
+#define g_f1AlphaToCoverage    (cAlphaTestRef.y)
 
 //==================================================================================================
 // Samplers
@@ -198,8 +199,25 @@ float4 main(PS_INPUT i) : COLOR
 	#endif
 
 		// ADD THIS BLOCK IMMEDIATELY AFTER SAMPLING THE BASE TEXTURE
+	// ADD THIS BLOCK IMMEDIATELY AFTER SAMPLING THE BASE TEXTURE
 	#if ALPHATEST
+#		if WORLD_NORMAL
+	// SSAO Pass: We must hard-clip the geometry so shadows don't pool on invisible pixels
 		clip(f4BaseTexture.a - g_f1AlphaTestReference);
+	#else
+	// Color Pass: Check if A2C is enabled via our constant
+		if (g_f1AlphaToCoverage < 0.5f)
+		{
+			// A2C is OFF: Perform a hard HLSL clip
+			clip(f4BaseTexture.a - g_f1AlphaTestReference);
+		}
+		else
+		{
+			// A2C is ON: Preserve the smooth gradient for the hardware MSAA solver!
+			// We still clip absolute zero (0.01) to save GPU cycles on totally empty space.
+			clip(f4BaseTexture.a - 0.01f);
+		}
+		#endif
 	#endif
 
 		// --- NORMAL MAP & FLAKE BLENDING ---

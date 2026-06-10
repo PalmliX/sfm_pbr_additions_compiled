@@ -87,6 +87,7 @@ SHADER_PARAM(NormalMap_FlipB, SHADER_PARAM_TYPE_BOOL, "", "")
 SHADER_PARAM(NormalMapFactor, SHADER_PARAM_TYPE_FLOAT, "", "")
 
 SHADER_PARAM(AlphaTestReference, SHADER_PARAM_TYPE_FLOAT, "0", "")
+SHADER_PARAM(AllowAlphaToCoverage, SHADER_PARAM_TYPE_BOOL, "0", "Enable alpha-to-coverage") 
 SHADER_PARAM(EnvMap, SHADER_PARAM_TYPE_ENVMAP, "", "Set the cubemap for this material.")
 SHADER_PARAM(EmissionTexture, SHADER_PARAM_TYPE_TEXTURE, "", "Emission texture")
 SHADER_PARAM(BumpFrame, SHADER_PARAM_TYPE_INTEGER, "0", "Frame number for $bumpmap")
@@ -344,21 +345,34 @@ SHADER_DRAW
 
 			if (bIsAlphaTested)
 			{
+				bool bAlphaToCoverage = params[AllowAlphaToCoverage]->IsDefined() && params[AllowAlphaToCoverage]->GetIntValue();
+
 				if (!bWorldNormal)
 				{
-					// Standard Pass: Enable hardware alpha test as normal
-					pShaderShadow->EnableAlphaTest(true);
-					const float f1AlphaTestReference = params[AlphaTestReference]->GetFloatValue();
-					if (f1AlphaTestReference > 0.0f)
+					if (bAlphaToCoverage)
 					{
-						pShaderShadow->AlphaFunc(SHADER_ALPHAFUNC_GEQUAL, f1AlphaTestReference);
+						// A2C Enabled: Let the hardware MSAA resolve the alpha gradient
+						pShaderShadow->EnableAlphaTest(false);
+						pShaderShadow->EnableAlphaToCoverage(true);
+					}
+					else
+					{
+						// Standard Alphatest: Binary hardware clipping
+						pShaderShadow->EnableAlphaToCoverage(false);
+						pShaderShadow->EnableAlphaTest(true);
+						const float f1AlphaTestReference = params[AlphaTestReference]->GetFloatValue();
+						if (f1AlphaTestReference > 0.0f)
+						{
+							pShaderShadow->AlphaFunc(SHADER_ALPHAFUNC_GEQUAL, f1AlphaTestReference);
+						}
 					}
 				}
 				else
 				{
-					// SSAO Depth Pass: Disable hardware alpha test!
-					// Our HLSL clip() handles the cutouts, preventing the hardware from eating the depth output.
+					// SSAO Depth Pass: Disable all hardware transparency! 
+					// Our HLSL clip() will handle the geometry cutouts here.
 					pShaderShadow->EnableAlphaTest(false);
+					pShaderShadow->EnableAlphaToCoverage(false);
 				}
 			}
 
@@ -723,10 +737,11 @@ SHADER_DRAW
 			pShaderAPI->SetPixelShaderConstant(74, cCarPaintMode);
 			// --------------------------------
 
-			// --- ALPHATEST REFERENCE ---
+			// --- ALPHATEST REFERENCE & A2C ---
 			float cAlphaTestRef[4] = {
 				clamp(params[AlphaTestReference]->GetFloatValue(), 0.0f, 1.0f),
-				0.0f, 0.0f, 0.0f
+				(params[AllowAlphaToCoverage]->IsDefined() && params[AllowAlphaToCoverage]->GetIntValue()) ? 1.0f : 0.0f,
+				0.0f, 0.0f
 			};
 			pShaderAPI->SetPixelShaderConstant(75, cAlphaTestRef);
 			// ---------------------------
