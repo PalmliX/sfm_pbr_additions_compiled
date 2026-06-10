@@ -15,6 +15,8 @@
 // STATIC: "DUALLOBE"                   "0..1"
 // STATIC: "PLANARREFLECTION" "0..1"
 
+// STATIC: "ALPHATEST" "0..1"
+
 // DYNAMIC: "PIXELFOGTYPE"              "0..2"
 // DYNAMIC: "FLASHLIGHTSHADOWS"         "0..1"
 // DYNAMIC: "UBERLIGHT"					"0..1"

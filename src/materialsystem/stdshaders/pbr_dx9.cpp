@@ -338,15 +338,31 @@ SHADER_DRAW
 
 		if (IsSnapshotting())
 		{
+			// Move the bWorldNormal evaluation up here so we can read it early
+			bool bWorldNormal = (ENABLE_FIXED_LIGHTING_OUTPUTNORMAL_AND_DEPTH ==
+				(IS_FLAG2_SET(MATERIAL_VAR2_USE_GBUFFER0) + 2 * IS_FLAG2_SET(MATERIAL_VAR2_USE_GBUFFER1)));
+
 			if (bIsAlphaTested)
 			{
-				pShaderShadow->EnableAlphaTest(true);
-				const float f1AlphaTestReference = params[AlphaTestReference]->GetFloatValue();
-				if (f1AlphaTestReference > 0.0f)
+				if (!bWorldNormal)
 				{
-					pShaderShadow->AlphaFunc(SHADER_ALPHAFUNC_GEQUAL, f1AlphaTestReference);
+					// Standard Pass: Enable hardware alpha test as normal
+					pShaderShadow->EnableAlphaTest(true);
+					const float f1AlphaTestReference = params[AlphaTestReference]->GetFloatValue();
+					if (f1AlphaTestReference > 0.0f)
+					{
+						pShaderShadow->AlphaFunc(SHADER_ALPHAFUNC_GEQUAL, f1AlphaTestReference);
+					}
+				}
+				else
+				{
+					// SSAO Depth Pass: Disable hardware alpha test!
+					// Our HLSL clip() handles the cutouts, preventing the hardware from eating the depth output.
+					pShaderShadow->EnableAlphaTest(false);
 				}
 			}
+
+			// ... (Continue with the rest of your flashlight/blending setup)
 
 			if (bHasFlashlight)
 			{
@@ -373,7 +389,15 @@ SHADER_DRAW
 			else
 				DefaultFog();
 
-			pShaderShadow->EnableAlphaWrites(bFullyOpaque);
+			// Ensure the G-Buffer always receives the depth data in the alpha channel!
+			if (bWorldNormal)
+			{
+				pShaderShadow->EnableAlphaWrites(true);
+			}
+			else
+			{
+				pShaderShadow->EnableAlphaWrites(bFullyOpaque);
+			}
 
 			if (IS_FLAG_SET(MATERIAL_VAR_MODEL))
 			{
@@ -473,9 +497,6 @@ SHADER_DRAW
 				pShaderShadow->EnableSRGBRead((Sampler_t)11, true);
 			}
 
-			bool bWorldNormal = (ENABLE_FIXED_LIGHTING_OUTPUTNORMAL_AND_DEPTH ==
-							  (IS_FLAG2_SET(MATERIAL_VAR2_USE_GBUFFER0) + 2 * IS_FLAG2_SET(MATERIAL_VAR2_USE_GBUFFER1)));
-
 			DECLARE_STATIC_VERTEX_SHADER(pbr_vs30);
 			SET_STATIC_VERTEX_SHADER_COMBO(WORLD_NORMAL, bWorldNormal);
 			SET_STATIC_VERTEX_SHADER(pbr_vs30);
@@ -492,6 +513,7 @@ SHADER_DRAW
 					SET_STATIC_PIXEL_SHADER_COMBO(WRINKLEMAP, bWrinkleMapping);
 					SET_STATIC_PIXEL_SHADER_COMBO(SUBSURFACESCATTERING, bThicknessTexture);
 					SET_STATIC_PIXEL_SHADER_COMBO(DUALLOBE, bHasDualLobe);
+					SET_STATIC_PIXEL_SHADER_COMBO(ALPHATEST, bIsAlphaTested);
 					SET_STATIC_PIXEL_SHADER(pbr_sg_projtex_ps30);
 				}
 				else
@@ -504,6 +526,7 @@ SHADER_DRAW
 					SET_STATIC_PIXEL_SHADER_COMBO(WRINKLEMAP, bWrinkleMapping);
 					SET_STATIC_PIXEL_SHADER_COMBO(SUBSURFACESCATTERING, bThicknessTexture);
 					SET_STATIC_PIXEL_SHADER_COMBO(DUALLOBE, bHasDualLobe);
+					SET_STATIC_PIXEL_SHADER_COMBO(ALPHATEST, bIsAlphaTested);
 					SET_STATIC_PIXEL_SHADER(pbr_mrao_projtex_ps30);
 				}
 			}
@@ -519,6 +542,7 @@ SHADER_DRAW
 					SET_STATIC_PIXEL_SHADER_COMBO(WRINKLEMAP, bWrinkleMapping);
 					SET_STATIC_PIXEL_SHADER_COMBO(SUBSURFACESCATTERING, bThicknessTexture);
 					SET_STATIC_PIXEL_SHADER_COMBO(DUALLOBE, bHasDualLobe);
+					SET_STATIC_PIXEL_SHADER_COMBO(ALPHATEST, bIsAlphaTested);
 					SET_STATIC_PIXEL_SHADER(pbr_sg_ps30);
 				}
 				else
@@ -531,6 +555,7 @@ SHADER_DRAW
 					SET_STATIC_PIXEL_SHADER_COMBO(WRINKLEMAP, bWrinkleMapping);
 					SET_STATIC_PIXEL_SHADER_COMBO(SUBSURFACESCATTERING, bThicknessTexture);
 					SET_STATIC_PIXEL_SHADER_COMBO(DUALLOBE, bHasDualLobe);
+					SET_STATIC_PIXEL_SHADER_COMBO(ALPHATEST, bIsAlphaTested);
 					SET_STATIC_PIXEL_SHADER(pbr_mrao_ps30);
 				}
 			}
@@ -697,6 +722,14 @@ SHADER_DRAW
 			};
 			pShaderAPI->SetPixelShaderConstant(74, cCarPaintMode);
 			// --------------------------------
+
+			// --- ALPHATEST REFERENCE ---
+			float cAlphaTestRef[4] = {
+				clamp(params[AlphaTestReference]->GetFloatValue(), 0.0f, 1.0f),
+				0.0f, 0.0f, 0.0f
+			};
+			pShaderAPI->SetPixelShaderConstant(75, cAlphaTestRef);
+			// ---------------------------
 
 			Vector4D color(0, 0, 0, 0);
 			if (bHasColor)

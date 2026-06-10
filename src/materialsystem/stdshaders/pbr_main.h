@@ -100,6 +100,9 @@ const float4 cMRAOExponent : register(PSREG_PBR_MRAOEXPONENT);
 #define g_f3MRAOExponent (cMRAOExponent.xyz)
 #define g_flEnvDlightFactor (cMRAOExponent.w)
 
+const float4 cAlphaTestRef : register(c75);
+#define g_f1AlphaTestReference (cAlphaTestRef.x)
+
 //==================================================================================================
 // Samplers
 //==================================================================================================
@@ -192,6 +195,11 @@ float4 main(PS_INPUT i) : COLOR
 		f4BaseTexture = tex2D(Sampler_Diffuse, f2TexCoord);
 	#else
 		f4BaseTexture = tex2D(Sampler_BaseColor, f2TexCoord);
+	#endif
+
+		// ADD THIS BLOCK IMMEDIATELY AFTER SAMPLING THE BASE TEXTURE
+	#if ALPHATEST
+		clip(f4BaseTexture.a - g_f1AlphaTestReference);
 	#endif
 
 		// --- NORMAL MAP & FLAKE BLENDING ---
