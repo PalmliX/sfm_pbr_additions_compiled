@@ -390,14 +390,17 @@ float4 main(PS_INPUT i) : COLOR
 					float3 f3IndirectSpecular = ENV_MAP_SCALE * texCUBElod(Sampler_Envmap, f4ReflectUV).rgb;
 					f3IndirectSpecular *= EnvBRDFApprox(f3Lobe1Specular, f1Roughness, f1EnvNdotV);
 
-					#if DUALLOBE
-						float f1Lobe2NdotV = max(0.0f, dot(f3FlakeNormalWS, f3EnvViewDir));
-						float3 f3Lobe2Reflect = reflect(-f3EnvViewDir, f3FlakeNormalWS);
-						float4 f4Lobe2ReflectUV = float4(f3Lobe2Reflect, f1SecondaryRoughness * g_f1EnvMapMips);
-						float3 f3Lobe2EnvMap = ENV_MAP_SCALE * texCUBElod(Sampler_Envmap, f4Lobe2ReflectUV).rgb;
+				#if DUALLOBE
+					float f1Lobe2NdotV = max(0.0f, dot(f3FlakeNormalWS, f3EnvViewDir));
+					float3 f3Lobe2Reflect = reflect(-f3EnvViewDir, f3FlakeNormalWS);
+					float4 f4Lobe2ReflectUV = float4(f3Lobe2Reflect, f1SecondaryRoughness * g_f1EnvMapMips);
+					float3 f3Lobe2EnvMap = ENV_MAP_SCALE * texCUBElod(Sampler_Envmap, f4Lobe2ReflectUV).rgb;
 
-						f3Lobe2EnvMap *= EnvBRDFApprox(f3Lobe2Specular, f1SecondaryRoughness, f1Lobe2NdotV);
+					f3Lobe2EnvMap *= EnvBRDFApprox(f3Lobe2Specular, f1SecondaryRoughness, f1Lobe2NdotV);
 
+					// ONLY apply the extreme flake contrast if Car Paint is enabled
+					if (g_f1CarPaintMode > 0.5f)
+					{
 						// Bring the baseline up to 1.0
 						f3Lobe2EnvMap *= 25.0f;
 
@@ -407,9 +410,10 @@ float4 main(PS_INPUT i) : COLOR
 
 						// Capped at 16.0 to allow intense HDR glints and "disco ball" sparkles
 						f3Lobe2EnvMap = min(f3Lobe2EnvMap, 16.0f);
+				}
 
-						f3IndirectSpecular += f3Lobe2EnvMap;
-					#endif
+					f3IndirectSpecular += f3Lobe2EnvMap;
+				#endif
 
 					#if PLANARREFLECTION
 						float2 screenUV = f2TexCoord;
@@ -537,15 +541,18 @@ float4 main(PS_INPUT i) : COLOR
 						float4 f4ReflectUV = float4(f3Reflect, f1Roughness * g_f1EnvMapMips);
 						float3 f3DynamicEnvMap = ENV_MAP_SCALE * texCUBElod(Sampler_Envmap_Flashlight, f4ReflectUV).rgb;
 						f3DynamicEnvMap *= EnvBRDFApprox(f3Lobe1Specular, f1Roughness, f1EnvNdotV);
+						
+					#if DUALLOBE
+						float f1Lobe2NdotV = max(0.0f, dot(f3FlakeNormalWS, f3EnvViewDir));
+						float3 f3Lobe2Reflect = reflect(-f3EnvViewDir, f3FlakeNormalWS);
+						float4 f4Lobe2ReflectUV = float4(f3Lobe2Reflect, f1SecondaryRoughness * g_f1EnvMapMips);
+						float3 f3Lobe2DynamicEnvMap = ENV_MAP_SCALE * texCUBElod(Sampler_Envmap_Flashlight, f4Lobe2ReflectUV).rgb;
 
-						#if DUALLOBE
-							float f1Lobe2NdotV = max(0.0f, dot(f3FlakeNormalWS, f3EnvViewDir));
-							float3 f3Lobe2Reflect = reflect(-f3EnvViewDir, f3FlakeNormalWS);
-							float4 f4Lobe2ReflectUV = float4(f3Lobe2Reflect, f1SecondaryRoughness * g_f1EnvMapMips);
-							float3 f3Lobe2DynamicEnvMap = ENV_MAP_SCALE * texCUBElod(Sampler_Envmap_Flashlight, f4Lobe2ReflectUV).rgb;
+						f3Lobe2DynamicEnvMap *= EnvBRDFApprox(f3Lobe2Specular, f1SecondaryRoughness, f1Lobe2NdotV);
 
-							f3Lobe2DynamicEnvMap *= EnvBRDFApprox(f3Lobe2Specular, f1SecondaryRoughness, f1Lobe2NdotV);
-
+						// ONLY apply the extreme flake contrast if Car Paint is enabled
+						if (g_f1CarPaintMode > 0.5f)
+						{
 							// Bring the baseline up to 1.0
 							f3Lobe2DynamicEnvMap *= 25.0f;
 
@@ -554,9 +561,10 @@ float4 main(PS_INPUT i) : COLOR
 
 							// Capped at 16.0 to allow intense HDR glints and "disco ball" sparkles
 							f3Lobe2DynamicEnvMap = min(f3Lobe2DynamicEnvMap, 16.0f);
+						}
 
-							f3DynamicEnvMap += f3Lobe2DynamicEnvMap;
-						#endif
+						f3DynamicEnvMap += f3Lobe2DynamicEnvMap;
+					#endif
 
 						float f1NdotL = saturate(dot(f3NormalWS, flashLightIn));
 						float flLightLuminance = dot(flashLightIntensity, float3(0.299f, 0.587f, 0.114f));
