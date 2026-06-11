@@ -280,6 +280,9 @@ float4 main(PS_INPUT i) : COLOR
 			return float4(f3NormalWS, fSSAODepth);
 		#endif
 
+			// --- ENVMAP METALNESS MASK ---
+			float flEnvmapMask = 1.0f;
+
 		#if SPECULARGLOSSINESS
 			float4 f4SpecularTexture = tex2D(Sampler_Specular, f2TexCoord);
 			float3 f3DiffuseColor = f4BaseTexture.rgb;
@@ -295,6 +298,13 @@ float4 main(PS_INPUT i) : COLOR
 			f4MRAOTexture.rgb = saturate(g_f3MRAOMultiplier * pow(max(f4MRAOTexture.rgb, 0.0f), g_f3MRAOExponent) + g_f3MRAOBias);
 
 			float f1Metalness = f4MRAOTexture.r;
+
+			// If we are in PBR mode and Car Paint is disabled, restrict EnvMap strictly to Metalness
+			if (g_f1CarPaintMode < 0.5f)
+			{
+				flEnvmapMask = f1Metalness;
+			}
+
 			float3 f3DiffuseColor = (1.0f - f1Metalness) * f4BaseTexture.rgb;
 			float3 f3SpecularColor = lerp(0.04f, f4BaseTexture.rgb, f1Metalness);
 
@@ -415,24 +425,27 @@ float4 main(PS_INPUT i) : COLOR
 					f3IndirectSpecular += f3Lobe2EnvMap;
 				#endif
 
-					#if PLANARREFLECTION
-						float2 screenUV = f2TexCoord;
-						screenUV += f3NormalWS.xy * 0.05f;
-						float2 blurSpread = g_PlanarBlurScale.xy * f1Roughness * 0.005f;
-						float3 f3PlanarColor = 0.0f;
+				#if PLANARREFLECTION
+					float2 screenUV = f2TexCoord;
+					screenUV += f3NormalWS.xy * 0.05f;
+					float2 blurSpread = g_PlanarBlurScale.xy * f1Roughness * 0.005f;
+					float3 f3PlanarColor = 0.0f;
 
-						f3PlanarColor += tex2D(Sampler_PlanarReflection, screenUV - blurSpread * 4.0).rgb * 0.00390625f;
-						f3PlanarColor += tex2D(Sampler_PlanarReflection, screenUV - blurSpread * 3.0).rgb * 0.03125f;
-						f3PlanarColor += tex2D(Sampler_PlanarReflection, screenUV - blurSpread * 2.0).rgb * 0.109375f;
-						f3PlanarColor += tex2D(Sampler_PlanarReflection, screenUV - blurSpread * 1.0).rgb * 0.21875f;
-						f3PlanarColor += tex2D(Sampler_PlanarReflection, screenUV).rgb * 0.2734375f;
-						f3PlanarColor += tex2D(Sampler_PlanarReflection, screenUV + blurSpread * 1.0).rgb * 0.21875f;
-						f3PlanarColor += tex2D(Sampler_PlanarReflection, screenUV + blurSpread * 2.0).rgb * 0.109375f;
-						f3PlanarColor += tex2D(Sampler_PlanarReflection, screenUV + blurSpread * 3.0).rgb * 0.03125f;
-						f3PlanarColor += tex2D(Sampler_PlanarReflection, screenUV + blurSpread * 4.0).rgb * 0.00390625f;
+					f3PlanarColor += tex2D(Sampler_PlanarReflection, screenUV - blurSpread * 4.0).rgb * 0.00390625f;
+					f3PlanarColor += tex2D(Sampler_PlanarReflection, screenUV - blurSpread * 3.0).rgb * 0.03125f;
+					f3PlanarColor += tex2D(Sampler_PlanarReflection, screenUV - blurSpread * 2.0).rgb * 0.109375f;
+					f3PlanarColor += tex2D(Sampler_PlanarReflection, screenUV - blurSpread * 1.0).rgb * 0.21875f;
+					f3PlanarColor += tex2D(Sampler_PlanarReflection, screenUV).rgb * 0.2734375f;
+					f3PlanarColor += tex2D(Sampler_PlanarReflection, screenUV + blurSpread * 1.0).rgb * 0.21875f;
+					f3PlanarColor += tex2D(Sampler_PlanarReflection, screenUV + blurSpread * 2.0).rgb * 0.109375f;
+					f3PlanarColor += tex2D(Sampler_PlanarReflection, screenUV + blurSpread * 3.0).rgb * 0.03125f;
+					f3PlanarColor += tex2D(Sampler_PlanarReflection, screenUV + blurSpread * 4.0).rgb * 0.00390625f;
 
-						f3IndirectSpecular = f3PlanarColor * EnvBRDFApprox(f3Lobe1Specular, f1Roughness, f1EnvNdotV);
-					#endif
+					f3IndirectSpecular = f3PlanarColor * EnvBRDFApprox(f3Lobe1Specular, f1Roughness, f1EnvNdotV);
+				#endif
+
+					// ---> OUR NEW MASK LINE GOES RIGHT HERE <---
+					f3IndirectSpecular *= flEnvmapMask;
 
 					float flBaseVisibility = saturate(1.0f - g_flEnvDlightFactor);
 					f3IndirectLighting = (f3AmbientDiffuse + f3IndirectSpecular) * f1AmbientOcclusion * flBaseVisibility;
@@ -572,9 +585,12 @@ float4 main(PS_INPUT i) : COLOR
 
 						f3DynamicEnvMap *= (flDynamicMask * g_flEnvDlightFactor * f1AmbientOcclusion);
 
+						// Apply the metalness mask to the flashlight's dynamic environment map
+						f3DynamicEnvMap *= flEnvmapMask;
+
 						f3DirectLighting += f3DynamicEnvMap;
 						// -----------------------------------
-					}
+						}
 					#endif
 
 					float3 f3CombinedLighting = f3DirectLighting + f3IndirectLighting;
