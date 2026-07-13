@@ -15,7 +15,7 @@ This version gets loaded over top of the existing workshop plugin. It doesn't re
 #### rt_camera support which is affected by normal and roughness maps, and masked by metalness. It replaces envmap reflections so it should also work in diffuse/specular mode.
 #### Added an envmap translation offset, which allows animation of the envmap position in x,y,z in SFM to simulate movement, for example a car driving down a tunnel with the lights moving accross car.
 #### Car Paint shader with included paint speckle normal map.
-#### *These changes were written with the help of AI and as is fairly hacky as you'd imagine since it looks like based on @WhiteRedDragons code comments they're working on a better solution for all of it so this is only temporary until then.*
+#### *These changes were written with the help of AI*
 
 # Install
 ## *You MUST already be subscribed to the PBR Shader from the workshop and it must be working*
