@@ -10,11 +10,11 @@ This version gets loaded over top of the existing workshop plugin. It doesn't re
 #### Many additional material settings for things like normal map intensity, channel inverting, metallic/roughness bias, exponent and more!
 ## Fixes and new Features compared to @WhiteRedDragons fork
 #### Restored cubemap rendering and added a feature whereby envmaps (cubemaps) no longer glow in the dark and are now masked by SFM dynamic lights. Also metals are no longer rendered black when lighting is disabled. 
-#### Fixed the old issue with alphatested materials becoming transparent when SSAO is also enabled on the material.
 #### This feature is controllable (off, blend, or overdrive) via a material parameter ($envdlightfactor). See parameters list below for more details.
+#### Fixed the old issue with alphatested materials becoming transparent when SSAO is also enabled on the material.
 #### rt_camera support which is affected by normal and roughness maps, and masked by metalness. It replaces envmap reflections so it should also work in diffuse/specular mode.
 #### Added an envmap translation offset, which allows animation of the envmap position in x,y,z in SFM to simulate movement, for example a car driving down a tunnel with the lights moving accross car.
-#### Car Paint shader with built-in paint speckle normals.
+#### Car Paint shader with included paint speckle normal map.
 #### *These changes were written with the help of AI and as is fairly hacky as you'd imagine since it looks like based on @WhiteRedDragons code comments they're working on a better solution for all of it so this is only temporary until then.*
 
 # Install
@@ -37,6 +37,28 @@ This version gets loaded over top of the existing workshop plugin. It doesn't re
 #### $BumpCompress - *Stretch bumpmap*
 #### $Stretch - *Stretch wrinklemap*
 #### $BumpStretch - *Compression bumpmap*
+
+### --- CAR PAINT & PEARLESCENCE ---
+#### $CarPaint, SHADER_PARAM_TYPE_BOOL, "0", "Enable Car Paint Mode")
+#### $CarPaintGlossFactor, SHADER_PARAM_TYPE_FLOAT, "1.0", "Glossiness of the clearcoat")
+#### $CarPaintColor, SHADER_PARAM_TYPE_COLOR, "[0.5 0.5 0.5]", "Base color for Car Paint")
+#### $CarPaintFlakeTexture, SHADER_PARAM_TYPE_TEXTURE, "models/carpaint/shared_flakes_normal", "")
+#### $FlakeContrast, SHADER_PARAM_TYPE_FLOAT, "2.0", "Contrast curve for the metallic flakes")
+#### $FlakeScale, SHADER_PARAM_TYPE_FLOAT, "50.0", "Scale of the metallic flakes")
+#### $PearlColor, SHADER_PARAM_TYPE_COLOR, "[0 0 0]", "The grazing angle color for pearlescence")
+#### $PearlTransition, SHADER_PARAM_TYPE_FLOAT, "2.0", "How sharply the pearl color blends in (1.0 to 5.0)")
+#### $PearlBlendAmount, SHADER_PARAM_TYPE_FLOAT, "0.0", "Opacity of the pearl effect (0.0 to 1.0)")
+
+### --- PLANAR REFLECTIONS ---
+#### $PlanarReflection, SHADER_PARAM_TYPE_BOOL, "0", "Enable Planar Reflections")
+#### $PlanarReflectionTexture, SHADER_PARAM_TYPE_TEXTURE, "_rt_camera", "Texture for planar reflection")
+#### $PlanarReflectionBlurScale, SHADER_PARAM_TYPE_VEC2, "[1.0 1.0]", "X and Y Blur Scale for Planar Reflections")
+
+### --- ENVMAP SPOOFING ---
+#### $EnvmapOffsetX, SHADER_PARAM_TYPE_FLOAT, "0.0", "Offset X for Envmap translation")
+#### $EnvmapOffsetY, SHADER_PARAM_TYPE_FLOAT, "0.0", "Offset Y for Envmap translation")
+#### $EnvmapOffsetZ, SHADER_PARAM_TYPE_FLOAT, "0.0", "Offset Z for Envmap translation")
+
 
 ## Adjustment Parameters
 
