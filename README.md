@@ -23,8 +23,32 @@ This version gets loaded over top of the existing workshop plugin. It doesn't re
 #### *Alternatively, you can create a new mod folder and make sure it's loaded ABOVE the workshop folder in usermod/gameinfo.txt* 
 #### 2) Run SFM, it's that easy! Try one of the new shader features/parameters in your vmt file to see if it's working. If you want to revert back to the workshop version simply rename, delete, or move the addons and shaders folders that you extracted.
 
+# Metallic/Roughness vs Diffuse/Specular Workflow
+
+The specular rendering mode in this shader utilizes a **Specular/Glossiness** workflow. This requires a different channel-packing strategy than the Metallic/Roughness (MRAO) workflow, splitting the material data across two specific texture parameters: `$diffuse` and `$specular`.
+
+---
+
+## 📦 Channel Packing Guide
+
+Here is exactly how the shader expects the data to be packed into your textures:
+
+### 1. The Specular Texture (`$specular`)
+*   **RGB Channels (Specular Color):** Defines the color and intensity of the reflections at a 0-degree angle (often called F0 or reflectance). Unlike the metallic workflow—where the shader automatically calculates reflection color based on the albedo and a metallic mask—this texture allows you to explicitly paint the reflection color for both metals and non-metals.
+*   **Alpha Channel (Glossiness):** Defines the smoothness of the surface. White is perfectly smooth, and black is entirely rough. 
+    > **Note:** The shader reads this alpha channel and mathematically inverts it (`1.0f - f4SpecularTexture.a`) to convert your glossiness map into a roughness value for the engine's lighting calculations.
+
+### 2. The Diffuse Texture (`$diffuse`)
+*   **RGB Channels (Albedo/Diffuse):** Provides the base color of the material.
+*   **Alpha Channel (Ambient Occlusion):** In this mode, the shader pulls the ambient occlusion data directly from the alpha channel of your diffuse texture.
+
+---
+
+## 🛠️ VMT Implementation
+
+To use this feature, define the `$diffuse` and `$specular` parameters in your `.vmt` file instead of `$basecolor` and `$mraotexture`. 
+
 # VMT Parameters
-***PLEASE NOTE:*** *I wasn't able to get a specular/glossiness setup working with this shader so for now I will only be focusing on metallic/roughnes.*
 ### Texture Maps *(path to VTF)*
 #### $BaseTexture - *Albedo/color in RGB and transparency mask in alpha.*
 #### $BumpMap - *Normal map in RGB and height map for POM in alpha. Channels can be inverted via VMT command so no need to worry about normal map format (i.e. Green+-)*
